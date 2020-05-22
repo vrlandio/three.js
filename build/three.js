@@ -5382,6 +5382,9 @@
 			}
 		} );
 
+	        this._positionCache = new Vector3();
+		this._quaternionCache = new Quaternion();
+		this._scaleCache = new Vector3().copy( scale ); 
 		this.matrix = new Matrix4();
 		this.matrixWorld = new Matrix4();
 
@@ -5837,10 +5840,19 @@
 
 		updateMatrix: function () {
 
+	                if ( ! this._positionCache.equals( this.position ) ||
+			! this._quaternionCache.equals( this.quaternion ) ||
+			! this._scaleCache.equals( this.scale ) ) {
+
 			this.matrix.compose( this.position, this.quaternion, this.scale );
 
 			this.matrixWorldNeedsUpdate = true;
+	                this._positionCache.copy( this.position );
+			this._quaternionCache.copy( this.quaternion );
+			this._scaleCache.copy( this.scale );
 
+
+	                }
 		},
 
 		updateMatrixWorld: function ( force ) {
@@ -23063,6 +23075,7 @@
 		var referenceSpaceType = 'local-floor';
 
 		var pose = null;
+		var poseTarget = null;
 
 		var controllers = [];
 		var inputSourcesMap = new Map();
@@ -23091,7 +23104,11 @@
 		this.enabled = false;
 
 		this.isPresenting = false;
+		this.getCameraPose = function ( ) {
 
+			return pose;
+
+		};
 		this.getController = function ( index ) {
 
 			var controller = controllers[ index ];
@@ -23369,10 +23386,17 @@
 
 		}
 
+		this.setPoseTarget = function ( object ) {
+
+			if ( object !== undefined ) { poseTarget = object; }
+
+		};
+
 		this.getCamera = function ( camera ) {
 
 			cameraVR.near = cameraR.near = cameraL.near = camera.near;
 			cameraVR.far = cameraR.far = cameraL.far = camera.far;
+			var poseMatrix = new THREE.Matrix4();
 
 			if ( _currentDepthNear !== cameraVR.near || _currentDepthFar !== cameraVR.far ) {
 
@@ -23390,7 +23414,8 @@
 
 			var parent = camera.parent;
 			var cameras = cameraVR.cameras;
-
+			var object = poseTarget || camera;
+			
 			updateCamera( cameraVR, parent );
 
 			for ( var i = 0; i < cameras.length; i ++ ) {
@@ -23400,10 +23425,23 @@
 			}
 
 			// update camera and its children
+	       // object.position.setY(1.6)
+	//		object.matrixNeedsUpdate = true;
 
-			camera.matrixWorld.copy( cameraVR.matrixWorld );
+			object.matrixWorld.copy( cameraVR.matrixWorld );
+			object.matrix.copy( cameraVR.matrix );
+			object.matrix.decompose( camera.position, camera.quaternion, camera.scale );
 
-			var children = camera.children;
+		/*	if ( pose ) {
+
+				poseMatrix.elements = pose.transform.matrix;
+				poseMatrix.decompose( object.position, object.quaternion, object.scale );
+				object.matrixNeedsUpdate = true;
+
+			}
+		*/
+		console.error(cameraVR);
+			var children = object.children;
 
 			for ( var i = 0, l = children.length; i < l; i ++ ) {
 
@@ -23437,7 +23475,7 @@
 
 			pose = frame.getViewerPose( referenceSpace );
 
-			if ( pose !== null ) {
+			if ( pose !== null  ) {
 
 				var views = pose.views;
 				var baseLayer = session.renderState.baseLayer;
@@ -23520,6 +23558,7 @@
 	 * @author szimek / https://github.com/szimek/
 	 * @author tschw
 	 */
+	//import { WebVRManager } from './webvr/WebVRManager.js';
 
 	function WebGLRenderer( parameters ) {
 
@@ -23778,6 +23817,10 @@
 		initGLContext();
 
 		// xr
+	      // var isOculusBrowser = /(OculusBrowser)/i.test(navigator.userAgent) && "getVRDisplays" in navigator;
+
+		//var xr = ( typeof navigator !== 'undefined' && 'xr' in navigator  && ! isOculusBrowser ) ? new WebXRManager( _this, _gl ) : new WebVRManager( _this );
+
 
 		var xr = new WebXRManager( _this, _gl );
 
@@ -24739,6 +24782,12 @@
 
 			state.setPolygonOffset( false );
 
+	 if ( xr.enabled && xr.submitFrame ) {
+
+
+				xr.submitFrame();
+
+			}
 			// _gl.finish();
 
 			currentRenderList = null;

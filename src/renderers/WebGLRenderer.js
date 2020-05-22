@@ -46,6 +46,7 @@ import { WebGLTextures } from './webgl/WebGLTextures.js';
 import { WebGLUniforms } from './webgl/WebGLUniforms.js';
 import { WebGLUtils } from './webgl/WebGLUtils.js';
 import { WebXRManager } from './webxr/WebXRManager.js';
+//import { WebVRManager } from './webvr/WebVRManager.js';
 
 function WebGLRenderer( parameters ) {
 
@@ -304,6 +305,10 @@ function WebGLRenderer( parameters ) {
 	initGLContext();
 
 	// xr
+      // var isOculusBrowser = /(OculusBrowser)/i.test(navigator.userAgent) && "getVRDisplays" in navigator;
+
+	//var xr = ( typeof navigator !== 'undefined' && 'xr' in navigator  && ! isOculusBrowser ) ? new WebXRManager( _this, _gl ) : new WebVRManager( _this );
+
 
 	var xr = new WebXRManager( _this, _gl );
 
@@ -1265,6 +1270,12 @@ function WebGLRenderer( parameters ) {
 
 		state.setPolygonOffset( false );
 
+ if ( xr.enabled && xr.submitFrame ) {
+
+
+			xr.submitFrame();
+
+		}
 		// _gl.finish();
 
 		currentRenderList = null;

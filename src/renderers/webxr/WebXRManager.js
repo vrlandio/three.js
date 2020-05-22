@@ -22,6 +22,7 @@ function WebXRManager( renderer, gl ) {
 	var referenceSpaceType = 'local-floor';
 
 	var pose = null;
+	var poseTarget = null;
 
 	var controllers = [];
 	var inputSourcesMap = new Map();
@@ -50,7 +51,11 @@ function WebXRManager( renderer, gl ) {
 	this.enabled = false;
 
 	this.isPresenting = false;
+	this.getCameraPose = function ( ) {
 
+		return pose;
+
+	};
 	this.getController = function ( index ) {
 
 		var controller = controllers[ index ];
@@ -328,10 +333,17 @@ function WebXRManager( renderer, gl ) {
 
 	}
 
+	this.setPoseTarget = function ( object ) {
+
+		if ( object !== undefined ) poseTarget = object;
+
+	};
+
 	this.getCamera = function ( camera ) {
 
 		cameraVR.near = cameraR.near = cameraL.near = camera.near;
 		cameraVR.far = cameraR.far = cameraL.far = camera.far;
+		var poseMatrix = new THREE.Matrix4();
 
 		if ( _currentDepthNear !== cameraVR.near || _currentDepthFar !== cameraVR.far ) {
 
@@ -349,7 +361,8 @@ function WebXRManager( renderer, gl ) {
 
 		var parent = camera.parent;
 		var cameras = cameraVR.cameras;
-
+		var object = poseTarget || camera;
+		
 		updateCamera( cameraVR, parent );
 
 		for ( var i = 0; i < cameras.length; i ++ ) {
@@ -359,10 +372,23 @@ function WebXRManager( renderer, gl ) {
 		}
 
 		// update camera and its children
+       // object.position.setY(1.6)
+		object.matrixNeedsUpdate = true;
 
-		camera.matrixWorld.copy( cameraVR.matrixWorld );
+		object.matrixWorld.copy( cameraVR.matrixWorld );
+		object.matrix.copy( cameraVR.matrix );
+		object.matrix.decompose( camera.position, camera.quaternion, camera.scale );
 
-		var children = camera.children;
+	/*	if ( pose ) {
+
+			poseMatrix.elements = pose.transform.matrix;
+			poseMatrix.decompose( object.position, object.quaternion, object.scale );
+			object.matrixNeedsUpdate = true;
+
+		}
+	*/
+
+		var children = object.children;
 
 		for ( var i = 0, l = children.length; i < l; i ++ ) {
 
@@ -396,7 +422,7 @@ function WebXRManager( renderer, gl ) {
 
 		pose = frame.getViewerPose( referenceSpace );
 
-		if ( pose !== null ) {
+		if ( pose !== null  ) {
 
 			var views = pose.views;
 			var baseLayer = session.renderState.baseLayer;
