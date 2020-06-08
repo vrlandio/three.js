@@ -37077,7 +37077,7 @@
 				// JPEGs can't have an alpha channel, so memory can be saved by storing them as RGB.
 				var isJPEG = url.search( /\.jpe?g($|\?)/i ) > 0 || url.search( /^data\:image\/jpeg/ ) === 0;
 
-				texture.format = isJPEG ? RGBFormat : RGBAFormat;
+				texture.format = isJPEG ? RGBFormat : sRGBAFormat;
 				texture.needsUpdate = true;
 
 				if ( onLoad !== undefined ) {
