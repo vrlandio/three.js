@@ -37053,6 +37053,7 @@ TextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 		var loader = null;
 		if (typeof createImageBitmap !== 'undefined') {
 		  loader = new ImageBitmapLoader( this.manager );
+		  loader.setOptions( { imageOrientation: 'flipY' } );
 		} else {
 		  // Because some browser still don't support ImageBitmaps.
 		  loader = new ImageLoader( this.manager );
@@ -37069,7 +37070,6 @@ TextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 			var isJPEG = url.search( /\.jpe?g($|\?)/i ) > 0 || url.search( /^data\:image\/jpeg/ ) === 0;
 
 			texture.format = isJPEG ? RGBFormat : RGBAFormat;
-			texture.flipY = true;
 			texture.needsUpdate = true;
 
 			if ( onLoad !== undefined ) {
