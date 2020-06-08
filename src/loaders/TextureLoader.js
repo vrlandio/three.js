@@ -4,6 +4,7 @@
 
 import { RGBAFormat, RGBFormat } from '../constants.js';
 import { ImageLoader } from './ImageLoader.js';
+import { ImageBitmapLoader } from './ImageBitmapLoader.js';
 import { Texture } from '../textures/Texture.js';
 import { Loader } from './Loader.js';
 
