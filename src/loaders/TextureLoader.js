@@ -20,8 +20,14 @@ TextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 	load: function ( url, onLoad, onProgress, onError ) {
 
 		var texture = new Texture();
-
-		var loader = new ImageLoader( this.manager );
+		var loader = null;
+		if (typeof createImageBitmap !== 'undefined') {
+		  loader = new ImageBitmapLoader( this.manager );
+		} else {
+		  // Because some browser still don't support ImageBitmaps.
+		  loader = new ImageLoader( this.manager );
+		}	
+		
 		loader.setCrossOrigin( this.crossOrigin );
 		loader.setPath( this.path );
 

@@ -36953,8 +36953,14 @@
 		load: function ( url, onLoad, onProgress, onError ) {
 
 			var texture = new Texture();
-
-			var loader = new ImageLoader( this.manager );
+			var loader = null;
+			if (typeof createImageBitmap !== 'undefined') {
+			  loader = new ImageBitmapLoader( this.manager );
+			} else {
+			  // Because some browser still don't support ImageBitmaps.
+			  loader = new ImageLoader( this.manager );
+			}	
+			
 			loader.setCrossOrigin( this.crossOrigin );
 			loader.setPath( this.path );
 
@@ -41593,7 +41599,7 @@
 	 */
 
 
-	function ImageBitmapLoader( manager ) {
+	function ImageBitmapLoader$1( manager ) {
 
 		if ( typeof createImageBitmap === 'undefined' ) {
 
@@ -41613,9 +41619,9 @@
 
 	}
 
-	ImageBitmapLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
+	ImageBitmapLoader$1.prototype = Object.assign( Object.create( Loader.prototype ), {
 
-		constructor: ImageBitmapLoader,
+		constructor: ImageBitmapLoader$1,
 
 		setOptions: function setOptions( options ) {
 
@@ -50961,7 +50967,7 @@
 	exports.HemisphereLightProbe = HemisphereLightProbe;
 	exports.IcosahedronBufferGeometry = IcosahedronBufferGeometry;
 	exports.IcosahedronGeometry = IcosahedronGeometry;
-	exports.ImageBitmapLoader = ImageBitmapLoader;
+	exports.ImageBitmapLoader = ImageBitmapLoader$1;
 	exports.ImageLoader = ImageLoader;
 	exports.ImageUtils = ImageUtils;
 	exports.ImmediateRenderObject = ImmediateRenderObject;
