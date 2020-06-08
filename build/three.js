@@ -37077,6 +37077,7 @@
 				var isJPEG = url.search( /\.jpe?g($|\?)/i ) > 0 || url.search( /^data\:image\/jpeg/ ) === 0;
 
 				texture.format = isJPEG ? RGBFormat : RGBAFormat;
+				texture.flipY = true;
 				texture.needsUpdate = true;
 
 				if ( onLoad !== undefined ) {
