@@ -25,9 +25,9 @@
 
 			}
 
-			updateBuffers = needsUpdate( geometry );
+			updateBuffers = needsUpdate( geometry, index );
 
-			if ( updateBuffers ) saveCache( geometry );
+			if ( updateBuffers ) saveCache( geometry, index );
 
 		} else {
 
@@ -157,13 +157,14 @@
 			enabledAttributes: enabledAttributes,
 			attributeDivisors: attributeDivisors,
 			object: vao,
-			attributes: {}
+			attributes: {},
+			index: null
 
 		};
 
 	}
 
-	function needsUpdate( geometry ) {
+	function needsUpdate( geometry, index ) {
 
 		const cachedAttributes = currentState.attributes;
 		const geometryAttributes = geometry.attributes;
@@ -175,17 +176,23 @@
 			const cachedAttribute = cachedAttributes[ key ];
 			const geometryAttribute = geometryAttributes[ key ];
 
+			if ( geometryAttribute.isGLBufferAttribute ) return true;
+
+			if ( cachedAttribute === undefined ) return true;
+
 			if ( cachedAttribute.attribute !== geometryAttribute ) return true;
 
 			if ( cachedAttribute.data !== geometryAttribute.data ) return true;
 
 		}
 
+		if ( currentState.index !== index ) return true;
+
 		return false;
 
 	}
 
-	function saveCache( geometry ) {
+	function saveCache( geometry, index ) {
 
 		const cache = {};
 		const attributes = geometry.attributes;
@@ -208,6 +215,8 @@
 		}
 
 		currentState.attributes = cache;
+
+		currentState.index = index;
 
 	}
 
@@ -396,6 +405,23 @@
 					gl.vertexAttribPointer( programAttribute + 1, 4, type, false, 64, 16 );
 					gl.vertexAttribPointer( programAttribute + 2, 4, type, false, 64, 32 );
 					gl.vertexAttribPointer( programAttribute + 3, 4, type, false, 64, 48 );
+
+				} else if ( name === 'instanceColor' ) {
+
+					const attribute = attributes.get( object.instanceColor );
+
+					// TODO Attribute may not be available on context restore
+
+					if ( attribute === undefined ) continue;
+
+					const buffer = attribute.buffer;
+					const type = attribute.type;
+
+					enableAttributeAndDivisor( programAttribute, 1 );
+
+					gl.bindBuffer( gl.ARRAY_BUFFER, buffer );
+
+					gl.vertexAttribPointer( programAttribute, 3, type, false, 12, 0 );
 
 				} else if ( materialDefaultAttributeValues !== undefined ) {
 

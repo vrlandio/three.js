@@ -89,6 +89,7 @@ var list = {
 				"EventDispatcher": "api/en/core/EventDispatcher",
 				"Face3": "api/en/core/Face3",
 				"Geometry": "api/en/core/Geometry",
+				"GLBufferAttribute": "api/en/core/GLBufferAttribute",
 				"InstancedBufferAttribute": "api/en/core/InstancedBufferAttribute",
 				"InstancedBufferGeometry": "api/en/core/InstancedBufferGeometry",
 				"InstancedInterleavedBuffer": "api/en/core/InstancedInterleavedBuffer",
@@ -461,6 +462,26 @@ var list = {
 
 	},
 
+	"ar": {
+
+		"الكتيب": {
+
+			"البدء": {
+				"إنشاء مشهد": "manual/ar/introduction/Creating-a-scene",
+				"التثبيت": "manual/ar/introduction/Installation",
+				"دعم المتصفح": "manual/ar/introduction/Browser-support",
+				"فحص توافق WebGL": "manual/ar/introduction/WebGL-compatibility-check",
+				"كيف تدير الأشياء محليًا": "manual/ar/introduction/How-to-run-things-locally",
+				"إعدادات Typescript": "manual/ar/introduction/Typescript-setup",
+				"رسم خطوط": "manual/ar/introduction/Drawing-lines",
+				"إنشاء نص": "manual/ar/introduction/Creating-text",
+				"تحميل نماذج ثلاثية الأبعاد": "manual/ar/introduction/Loading-3D-models"
+			},
+
+		},
+
+	},
+
 	"zh": {
 
 		"手册": {
@@ -550,6 +571,7 @@ var list = {
 				"EventDispatcher": "api/zh/core/EventDispatcher",
 				"Face3": "api/zh/core/Face3",
 				"Geometry": "api/zh/core/Geometry",
+				"GLBufferAttribute": "api/zh/core/GLBufferAttribute",
 				"InstancedBufferAttribute": "api/zh/core/InstancedBufferAttribute",
 				"InstancedBufferGeometry": "api/zh/core/InstancedBufferGeometry",
 				"InstancedInterleavedBuffer": "api/zh/core/InstancedInterleavedBuffer",
