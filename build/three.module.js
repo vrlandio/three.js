@@ -595,6 +595,8 @@ class Vector2 {
 
 	constructor( x = 0, y = 0 ) {
 
+		Object.defineProperty( this, 'isVector2', { value: true } );
+
 		this.x = x;
 		this.y = y;
 
@@ -1070,11 +1072,11 @@ class Vector2 {
 
 }
 
-Vector2.prototype.isVector2 = true;
-
 class Matrix3 {
 
 	constructor() {
+
+		Object.defineProperty( this, 'isMatrix3', { value: true } );
 
 		this.elements = [
 
@@ -1417,8 +1419,6 @@ class Matrix3 {
 	}
 
 }
-
-Matrix3.prototype.isMatrix3 = true;
 
 let _canvas;
 
@@ -1795,6 +1795,8 @@ Object.defineProperty( Texture.prototype, "needsUpdate", {
 class Vector4 {
 
 	constructor( x = 0, y = 0, z = 0, w = 1 ) {
+
+		Object.defineProperty( this, 'isVector4', { value: true } );
 
 		this.x = x;
 		this.y = y;
@@ -2438,8 +2440,6 @@ class Vector4 {
 
 }
 
-Vector4.prototype.isVector4 = true;
-
 /*
  In options, we can specify:
  * Texture parameters for an auto-generated target texture
@@ -2557,6 +2557,8 @@ WebGLMultisampleRenderTarget.prototype = Object.assign( Object.create( WebGLRend
 class Quaternion {
 
 	constructor( x = 0, y = 0, z = 0, w = 1 ) {
+
+		Object.defineProperty( this, 'isQuaternion', { value: true } );
 
 		this._x = x;
 		this._y = y;
@@ -3193,11 +3195,11 @@ class Quaternion {
 
 }
 
-Quaternion.prototype.isQuaternion = true;
-
 class Vector3 {
 
 	constructor( x = 0, y = 0, z = 0 ) {
+
+		Object.defineProperty( this, 'isVector3', { value: true } );
 
 		this.x = x;
 		this.y = y;
@@ -3912,14 +3914,14 @@ class Vector3 {
 
 }
 
-Vector3.prototype.isVector3 = true;
-
 const _vector = new Vector3();
 const _quaternion = new Quaternion();
 
 class Box3 {
 
 	constructor( min, max ) {
+
+		Object.defineProperty( this, 'isBox3', { value: true } );
 
 		this.min = ( min !== undefined ) ? min : new Vector3( + Infinity, + Infinity, + Infinity );
 		this.max = ( max !== undefined ) ? max : new Vector3( - Infinity, - Infinity, - Infinity );
@@ -4432,8 +4434,6 @@ function satForAxes( axes, v0, v1, v2, extents ) {
 	return true;
 
 }
-
-Box3.prototype.isBox3 = true;
 
 const _points = [
 	new Vector3(),
@@ -5160,6 +5160,8 @@ class Ray {
 class Matrix4 {
 
 	constructor() {
+
+		Object.defineProperty( this, 'isMatrix4', { value: true } );
 
 		this.elements = [
 
@@ -6024,8 +6026,6 @@ class Matrix4 {
 
 }
 
-Matrix4.prototype.isMatrix4 = true;
-
 const _v1$1 = new Vector3();
 const _m1 = new Matrix4();
 const _zero = new Vector3( 0, 0, 0 );
@@ -6037,6 +6037,8 @@ const _z = new Vector3();
 class Euler {
 
 	constructor( x = 0, y = 0, z = 0, order = Euler.DefaultOrder ) {
+
+		Object.defineProperty( this, 'isEuler', { value: true } );
 
 		this._x = x;
 		this._y = y;
@@ -6351,7 +6353,6 @@ class Euler {
 
 Euler.DefaultOrder = 'XYZ';
 Euler.RotationOrders = [ 'XYZ', 'YZX', 'ZXY', 'XZY', 'YXZ', 'ZYX' ];
-Euler.prototype.isEuler = true;
 
 const _matrix = new Matrix4();
 const _quaternion$1 = new Quaternion();
@@ -7276,6 +7277,8 @@ class Plane {
 
 	constructor( normal, constant ) {
 
+		Object.defineProperty( this, 'isPlane', { value: true } );
+
 		// normal is assumed to be normalized
 
 		this.normal = ( normal !== undefined ) ? normal : new Vector3( 1, 0, 0 );
@@ -7487,8 +7490,6 @@ class Plane {
 	}
 
 }
-
-Plane.prototype.isPlane = true;
 
 const _v0$1 = new Vector3();
 const _v1$3 = new Vector3();
@@ -7865,6 +7866,8 @@ function LinearToSRGB( c ) {
 class Color {
 
 	constructor( r, g, b ) {
+
+		Object.defineProperty( this, 'isColor', { value: true } );
 
 		if ( g === undefined && b === undefined ) {
 
@@ -8412,7 +8415,6 @@ class Color {
 }
 
 Color.NAMES = _colorKeywords;
-Color.prototype.isColor = true;
 Color.prototype.r = 1;
 Color.prototype.g = 1;
 Color.prototype.b = 1;
@@ -13829,9 +13831,6 @@ WebGLCubeRenderTarget.prototype.fromEquirectangularTexture = function ( renderer
 	const mesh = new Mesh( geometry, material );
 
 	const currentMinFilter = texture.minFilter;
-	const currentRenderList = renderer.getRenderList();
-	const currentRenderTarget = renderer.getRenderTarget();
-	const currentRenderState = renderer.getRenderState();
 
 	// Avoid blurred poles
 	if ( texture.minFilter === LinearMipmapLinearFilter ) texture.minFilter = LinearFilter;
@@ -13840,10 +13839,6 @@ WebGLCubeRenderTarget.prototype.fromEquirectangularTexture = function ( renderer
 	camera.update( renderer, mesh );
 
 	texture.minFilter = currentMinFilter;
-
-	renderer.setRenderTarget( currentRenderTarget );
-	renderer.setRenderList( currentRenderList );
-	renderer.setRenderState( currentRenderState );
 
 	mesh.geometry.dispose();
 	mesh.material.dispose();
@@ -15676,8 +15671,6 @@ function WebGLBindingStates( gl, extensions, attributes, capabilities ) {
 			const cachedAttribute = cachedAttributes[ key ];
 			const geometryAttribute = geometryAttributes[ key ];
 
-			if ( geometryAttribute.isGLBufferAttribute ) return true;
-
 			if ( cachedAttribute === undefined ) return true;
 
 			if ( cachedAttribute.attribute !== geometryAttribute ) return true;
@@ -16455,9 +16448,17 @@ function WebGLCubeMaps( renderer ) {
 
 					if ( image && image.height > 0 ) {
 
+						const currentRenderList = renderer.getRenderList();
+						const currentRenderTarget = renderer.getRenderTarget();
+						const currentRenderState = renderer.getRenderState();
+
 						const renderTarget = new WebGLCubeRenderTarget( image.height / 2 );
 						renderTarget.fromEquirectangularTexture( renderer, texture );
 						cubemaps.set( texture, renderTarget );
+
+						renderer.setRenderTarget( currentRenderTarget );
+						renderer.setRenderList( currentRenderList );
+						renderer.setRenderState( currentRenderState );
 
 						return mapTextureMapping( renderTarget.texture, texture.mapping );
 
@@ -26602,6 +26603,8 @@ class FogExp2 {
 
 	constructor( color, density ) {
 
+		Object.defineProperty( this, 'isFogExp2', { value: true } );
+
 		this.name = '';
 
 		this.color = new Color( color );
@@ -26627,11 +26630,11 @@ class FogExp2 {
 
 }
 
-FogExp2.prototype.isFogExp2 = true;
-
 class Fog {
 
 	constructor( color, near, far ) {
+
+		Object.defineProperty( this, 'isFog', { value: true } );
 
 		this.name = '';
 
@@ -26661,13 +26664,14 @@ class Fog {
 
 }
 
-Fog.prototype.isFog = true;
-
 class Scene extends Object3D {
 
 	constructor() {
 
 		super();
+
+		Object.defineProperty( this, 'isScene', { value: true } );
+
 		this.type = 'Scene';
 
 		this.background = null;
@@ -26716,8 +26720,6 @@ class Scene extends Object3D {
 	}
 
 }
-
-Scene.prototype.isScene = true;
 
 function InterleavedBuffer( array, stride ) {
 
@@ -39799,6 +39801,8 @@ class SphericalHarmonics3 {
 
 	constructor() {
 
+		Object.defineProperty( this, 'isSphericalHarmonics3', { value: true } );
+
 		this.coefficients = [];
 
 		for ( let i = 0; i < 9; i ++ ) {
@@ -40027,8 +40031,6 @@ class SphericalHarmonics3 {
 	}
 
 }
-
-SphericalHarmonics3.prototype.isSphericalHarmonics3 = true;
 
 function LightProbe( sh, intensity ) {
 
@@ -46492,6 +46494,8 @@ const _vector$7 = new Vector2();
 class Box2 {
 
 	constructor( min, max ) {
+
+		Object.defineProperty( this, 'isBox2', { value: true } );
 
 		this.min = ( min !== undefined ) ? min : new Vector2( + Infinity, + Infinity );
 		this.max = ( max !== undefined ) ? max : new Vector2( - Infinity, - Infinity );
