@@ -23415,7 +23415,7 @@
 
 		this.isPresenting = false;
 
-	         this.getCameraPose = function ( ) {
+	        this.getCameraPose = function ( ) {
 
 	               return pose;
 
@@ -28596,21 +28596,6 @@
 
 		this.generateMipmaps = false;
 
-		var scope = this;
-
-		function updateVideo() {
-
-			scope.needsUpdate = true;
-			video.requestVideoFrameCallback( updateVideo );
-
-		}
-
-		if ( 'requestVideoFrameCallback' in video ) {
-
-			video.requestVideoFrameCallback( updateVideo );
-
-		}
-
 	}
 
 	VideoTexture.prototype = Object.assign( Object.create( Texture.prototype ), {
@@ -28622,9 +28607,8 @@
 		update: function () {
 
 			var video = this.image;
-			var hasVideoFrameCallback = 'requestVideoFrameCallback' in video;
 
-			if ( hasVideoFrameCallback === false && video.readyState >= video.HAVE_CURRENT_DATA ) {
+			if ( video.readyState >= video.HAVE_CURRENT_DATA ) {
 
 				this.needsUpdate = true;
 
