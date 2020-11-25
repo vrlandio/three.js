@@ -5199,6 +5199,9 @@
 				value: new Matrix3()
 			}
 		});
+		this._positionCache = new Vector3();
+		this._quaternionCache = new Quaternion();
+		this._scaleCache = new Vector3().copy(scale);
 		this.matrix = new Matrix4();
 		this.matrixWorld = new Matrix4();
 		this.matrixAutoUpdate = Object3D.DefaultMatrixAutoUpdate;
@@ -5482,8 +5485,16 @@
 			}
 		},
 		updateMatrix: function updateMatrix() {
-			this.matrix.compose(this.position, this.quaternion, this.scale);
-			this.matrixWorldNeedsUpdate = true;
+			if (!this._positionCache.equals(this.position) || !this._quaternionCache.equals(this.quaternion) || !this._scaleCache.equals(this.scale)) {
+				this.matrix.compose(this.position, this.quaternion, this.scale);
+				this.matrixWorldNeedsUpdate = true;
+
+				this._positionCache.copy(this.position);
+
+				this._quaternionCache.copy(this.quaternion);
+
+				this._scaleCache.copy(this.scale);
+			}
 		},
 		updateMatrixWorld: function updateMatrixWorld(force) {
 			if (this.matrixAutoUpdate) this.updateMatrix();
@@ -16662,6 +16673,10 @@
 		this.enabled = false;
 		this.isPresenting = false;
 
+		this.getCameraPose = function () {
+			return pose;
+		};
+
 		this.getController = function (index) {
 			var controller = controllers[index];
 
@@ -20328,32 +20343,28 @@
 		this.minFilter = minFilter !== undefined ? minFilter : LinearFilter;
 		this.magFilter = magFilter !== undefined ? magFilter : LinearFilter;
 		this.generateMipmaps = false;
-		var scope = this;
-
-		function updateVideo() {
-			scope.needsUpdate = true;
-			video.requestVideoFrameCallback(updateVideo);
-		}
-
-		if ('requestVideoFrameCallback' in video) {
-			video.requestVideoFrameCallback(updateVideo);
-		}
+		this.frameRate = 30;
+		this.prevTime = 0;
 	}
 
 	VideoTexture.prototype = Object.assign(Object.create(Texture.prototype), {
 		constructor: VideoTexture,
-		clone: function clone() {
-			return new this.constructor(this.image).copy(this);
-		},
 		isVideoTexture: true,
-		update: function update() {
-			var video = this.image;
-			var hasVideoFrameCallback = ('requestVideoFrameCallback' in video);
+		update: function () {
+			//	this.prevTime = Date.now();
+			return function () {
+				var video = this.image;
 
-			if (hasVideoFrameCallback === false && video.readyState >= video.HAVE_CURRENT_DATA) {
-				this.needsUpdate = true;
-			}
-		}
+				if (video.readyState >= video.HAVE_CURRENT_DATA) {
+					var time = Date.now();
+
+					if (time - this.prevTime >= 1000 / this.frameRate) {
+						this.needsUpdate = true;
+						this.prevTime = time;
+					}
+				}
+			};
+		}()
 	});
 
 	function CompressedTexture(mipmaps, width, height, format, type, mapping, wrapS, wrapT, magFilter, minFilter, anisotropy, encoding) {
