@@ -20343,7 +20343,7 @@
 		this.minFilter = minFilter !== undefined ? minFilter : LinearFilter;
 		this.magFilter = magFilter !== undefined ? magFilter : LinearFilter;
 		this.generateMipmaps = false;
-		this.frameRate = 30;
+		this.frameRate = 72;
 		this.prevTime = 0;
 	}
 
