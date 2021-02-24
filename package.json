@@ -107,5 +107,8 @@
       "build/three.module.js"
     ],
     "directories": {}
+  },
+  "dependencies": {
+    "@babel/helper-define-map": "^7.12.13"
   }
 }

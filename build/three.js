@@ -989,17 +989,7 @@
 	function _inheritsLoose(subClass, superClass) {
 		subClass.prototype = Object.create(superClass.prototype);
 		subClass.prototype.constructor = subClass;
-
-		_setPrototypeOf(subClass, superClass);
-	}
-
-	function _setPrototypeOf(o, p) {
-		_setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
-			o.__proto__ = p;
-			return o;
-		};
-
-		return _setPrototypeOf(o, p);
+		subClass.__proto__ = superClass;
 	}
 
 	function _assertThisInitialized(self) {
@@ -6066,6 +6056,9 @@
 				value: new Matrix3()
 			}
 		});
+		this._positionCache = new Vector3();
+		this._quaternionCache = new Quaternion();
+		this._scaleCache = new Vector3().copy(scale);
 		this.matrix = new Matrix4();
 		this.matrixWorld = new Matrix4();
 		this.matrixAutoUpdate = Object3D.DefaultMatrixAutoUpdate;
@@ -6349,8 +6342,16 @@
 			}
 		},
 		updateMatrix: function updateMatrix() {
-			this.matrix.compose(this.position, this.quaternion, this.scale);
-			this.matrixWorldNeedsUpdate = true;
+			if (!this._positionCache.equals(this.position) || !this._quaternionCache.equals(this.quaternion) || !this._scaleCache.equals(this.scale)) {
+				this.matrix.compose(this.position, this.quaternion, this.scale);
+				this.matrixWorldNeedsUpdate = true;
+
+				this._positionCache.copy(this.position);
+
+				this._quaternionCache.copy(this.quaternion);
+
+				this._scaleCache.copy(this.scale);
+			}
 		},
 		updateMatrixWorld: function updateMatrixWorld(force) {
 			if (this.matrixAutoUpdate) this.updateMatrix();
@@ -17476,6 +17477,10 @@
 			}
 
 			return controller.getTargetRaySpace();
+		};
+
+		this.getCameraPose = function () {
+			return pose;
 		};
 
 		this.getControllerGrip = function (index) {
