@@ -283,6 +283,8 @@ Object.assign( EventDispatcher.prototype, {
 
 			}
 
+			event.target = null;
+
 		}
 
 	}
@@ -2543,7 +2545,8 @@ class Quaternion {
 
 	static slerp( qa, qb, qm, t ) {
 
-		return qm.copy( qa ).slerp( qb, t );
+		console.warn( 'THREE.Quaternion: Static .slerp() has been deprecated. Use is now qm.slerpQuaternions( qa, qb, t ) instead.' );
+		return qm.slerpQuaternions( qa, qb, t );
 
 	}
 
@@ -3128,6 +3131,12 @@ class Quaternion {
 		this._onChangeCallback();
 
 		return this;
+
+	}
+
+	slerpQuaternions( qa, qb, t ) {
+
+		this.copy( qa ).slerp( qb, t );
 
 	}
 
@@ -6523,6 +6532,9 @@ function Object3D() {
 			value: new Matrix3()
 		}
 	} );
+	this._positionCache = new Vector3();
+	this._quaternionCache = new Quaternion();
+    this._scaleCache = new Vector3().copy(scale);
 
 	this.matrix = new Matrix4();
 	this.matrixWorld = new Matrix4();
@@ -7000,9 +7012,18 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	updateMatrix: function () {
 
-		this.matrix.compose( this.position, this.quaternion, this.scale );
+	
 
-		this.matrixWorldNeedsUpdate = true;
+		if (!this._positionCache.equals(this.position) || !this._quaternionCache.equals(this.quaternion) || !this._scaleCache.equals(this.scale)) {
+			this.matrix.compose(this.position, this.quaternion, this.scale);
+			this.matrixWorldNeedsUpdate = true;
+
+			this._positionCache.copy(this.position);
+
+			this._quaternionCache.copy(this.quaternion);
+
+			this._scaleCache.copy(this.scale);
+   }
 
 	},
 
@@ -12674,13 +12695,13 @@ var clipping_planes_pars_vertex = "#if NUM_CLIPPING_PLANES > 0\n\tvarying vec3 v
 
 var clipping_planes_vertex = "#if NUM_CLIPPING_PLANES > 0\n\tvClipPosition = - mvPosition.xyz;\n#endif";
 
-var color_fragment = "#ifdef USE_COLOR\n\tdiffuseColor.rgb *= vColor;\n#endif";
+var color_fragment = "#ifdef USE_COLOR\n\t#ifdef USE_VERTEX_ALPHA\n\t\tdiffuseColor *= vColor;\n\t#else\n\t\tdiffuseColor.rgb *= vColor;\n\t#endif\n#endif";
 
-var color_pars_fragment = "#ifdef USE_COLOR\n\tvarying vec3 vColor;\n#endif";
+var color_pars_fragment = "#ifdef USE_COLOR\n\t#if defined( USE_VERTEX_ALPHA )\n\t\tvarying vec4 vColor;\n\t#else\n\t\tvarying vec3 vColor;\n\t#endif\n#endif";
 
-var color_pars_vertex = "#if defined( USE_COLOR ) || defined( USE_INSTANCING_COLOR )\n\tvarying vec3 vColor;\n#endif";
+var color_pars_vertex = "#if defined( USE_COLOR ) || defined( USE_INSTANCING_COLOR )\n\t#if defined( USE_VERTEX_ALPHA )\n\t\tvarying vec4 vColor;\n\t#else\n\t\tvarying vec3 vColor;\n\t#endif\n#endif";
 
-var color_vertex = "#if defined( USE_COLOR ) || defined( USE_INSTANCING_COLOR )\n\tvColor = vec3( 1.0 );\n#endif\n#ifdef USE_COLOR\n\tvColor.xyz *= color.xyz;\n#endif\n#ifdef USE_INSTANCING_COLOR\n\tvColor.xyz *= instanceColor.xyz;\n#endif";
+var color_vertex = "#if defined( USE_COLOR ) || defined( USE_INSTANCING_COLOR )\n\t#if defined( USE_VERTEX_ALPHA )\n\t\tvColor = vec4( 1.0 );\n\t#else\n\t\tvColor = vec3( 1.0 );\n\t#endif\n#endif\n#ifdef USE_COLOR\n\tvColor *= color;\n#endif\n#ifdef USE_INSTANCING_COLOR\n\tvColor.xyz *= instanceColor.xyz;\n#endif";
 
 var common = "#define PI 3.141592653589793\n#define PI2 6.283185307179586\n#define PI_HALF 1.5707963267948966\n#define RECIPROCAL_PI 0.3183098861837907\n#define RECIPROCAL_PI2 0.15915494309189535\n#define EPSILON 1e-6\n#ifndef saturate\n#define saturate(a) clamp( a, 0.0, 1.0 )\n#endif\n#define whiteComplement(a) ( 1.0 - saturate( a ) )\nfloat pow2( const in float x ) { return x*x; }\nfloat pow3( const in float x ) { return x*x*x; }\nfloat pow4( const in float x ) { float x2 = x*x; return x2*x2; }\nfloat average( const in vec3 color ) { return dot( color, vec3( 0.3333 ) ); }\nhighp float rand( const in vec2 uv ) {\n\tconst highp float a = 12.9898, b = 78.233, c = 43758.5453;\n\thighp float dt = dot( uv.xy, vec2( a,b ) ), sn = mod( dt, PI );\n\treturn fract(sin(sn) * c);\n}\n#ifdef HIGH_PRECISION\n\tfloat precisionSafeLength( vec3 v ) { return length( v ); }\n#else\n\tfloat max3( vec3 v ) { return max( max( v.x, v.y ), v.z ); }\n\tfloat precisionSafeLength( vec3 v ) {\n\t\tfloat maxComponent = max3( abs( v ) );\n\t\treturn length( v / maxComponent ) * maxComponent;\n\t}\n#endif\nstruct IncidentLight {\n\tvec3 color;\n\tvec3 direction;\n\tbool visible;\n};\nstruct ReflectedLight {\n\tvec3 directDiffuse;\n\tvec3 directSpecular;\n\tvec3 indirectDiffuse;\n\tvec3 indirectSpecular;\n};\nstruct GeometricContext {\n\tvec3 position;\n\tvec3 normal;\n\tvec3 viewDir;\n#ifdef CLEARCOAT\n\tvec3 clearcoatNormal;\n#endif\n};\nvec3 transformDirection( in vec3 dir, in mat4 matrix ) {\n\treturn normalize( ( matrix * vec4( dir, 0.0 ) ).xyz );\n}\nvec3 inverseTransformDirection( in vec3 dir, in mat4 matrix ) {\n\treturn normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );\n}\nvec3 projectOnPlane(in vec3 point, in vec3 pointOnPlane, in vec3 planeNormal ) {\n\tfloat distance = dot( planeNormal, point - pointOnPlane );\n\treturn - distance * planeNormal + point;\n}\nfloat sideOfPlane( in vec3 point, in vec3 pointOnPlane, in vec3 planeNormal ) {\n\treturn sign( dot( point - pointOnPlane, planeNormal ) );\n}\nvec3 linePlaneIntersect( in vec3 pointOnLine, in vec3 lineDirection, in vec3 pointOnPlane, in vec3 planeNormal ) {\n\treturn lineDirection * ( dot( planeNormal, pointOnPlane - pointOnLine ) / dot( planeNormal, lineDirection ) ) + pointOnLine;\n}\nmat3 transposeMat3( const in mat3 m ) {\n\tmat3 tmp;\n\ttmp[ 0 ] = vec3( m[ 0 ].x, m[ 1 ].x, m[ 2 ].x );\n\ttmp[ 1 ] = vec3( m[ 0 ].y, m[ 1 ].y, m[ 2 ].y );\n\ttmp[ 2 ] = vec3( m[ 0 ].z, m[ 1 ].z, m[ 2 ].z );\n\treturn tmp;\n}\nfloat linearToRelativeLuminance( const in vec3 color ) {\n\tvec3 weights = vec3( 0.2126, 0.7152, 0.0722 );\n\treturn dot( weights, color.rgb );\n}\nbool isPerspectiveMatrix( mat4 m ) {\n\treturn m[ 2 ][ 3 ] == - 1.0;\n}\nvec2 equirectUv( in vec3 dir ) {\n\tfloat u = atan( dir.z, dir.x ) * RECIPROCAL_PI2 + 0.5;\n\tfloat v = asin( clamp( dir.y, - 1.0, 1.0 ) ) * RECIPROCAL_PI + 0.5;\n\treturn vec2( u, v );\n}";
 
@@ -16849,6 +16870,7 @@ function WebGLProgram( renderer, cacheKey, parameters, bindingStates ) {
 
 			parameters.vertexTangents ? '#define USE_TANGENT' : '',
 			parameters.vertexColors ? '#define USE_COLOR' : '',
+			parameters.vertexAlpha ? '#define USE_VERTEX_ALPHA' : '',
 			parameters.vertexUvs ? '#define USE_UV' : '',
 			parameters.uvsVertexOnly ? '#define UVS_VERTEX_ONLY' : '',
 
@@ -16902,7 +16924,15 @@ function WebGLProgram( renderer, cacheKey, parameters, bindingStates ) {
 
 			'#ifdef USE_COLOR',
 
-			'	attribute vec3 color;',
+			'	#ifdef USE_VERTEX_ALPHA',
+
+			'		attribute vec4 color;',
+
+			'	#else',
+
+			'		attribute vec3 color;',
+
+			'	#endif',
 
 			'#endif',
 
@@ -16985,6 +17015,7 @@ function WebGLProgram( renderer, cacheKey, parameters, bindingStates ) {
 
 			parameters.vertexTangents ? '#define USE_TANGENT' : '',
 			parameters.vertexColors || parameters.instancingColor ? '#define USE_COLOR' : '',
+			parameters.vertexAlpha ? '#define USE_VERTEX_ALPHA' : '',
 			parameters.vertexUvs ? '#define USE_UV' : '',
 			parameters.uvsVertexOnly ? '#define UVS_VERTEX_ONLY' : '',
 
@@ -17259,7 +17290,7 @@ function WebGLPrograms( renderer, cubemaps, extensions, capabilities, bindingSta
 		'map', 'mapEncoding', 'matcap', 'matcapEncoding', 'envMap', 'envMapMode', 'envMapEncoding', 'envMapCubeUV',
 		'lightMap', 'lightMapEncoding', 'aoMap', 'emissiveMap', 'emissiveMapEncoding', 'bumpMap', 'normalMap', 'objectSpaceNormalMap', 'tangentSpaceNormalMap', 'clearcoatMap', 'clearcoatRoughnessMap', 'clearcoatNormalMap', 'displacementMap', 'specularMap',
 		'roughnessMap', 'metalnessMap', 'gradientMap',
-		'alphaMap', 'combine', 'vertexColors', 'vertexTangents', 'vertexUvs', 'uvsVertexOnly', 'fog', 'useFog', 'fogExp2',
+		'alphaMap', 'combine', 'vertexColors', 'vertexAlpha', 'vertexTangents', 'vertexUvs', 'uvsVertexOnly', 'fog', 'useFog', 'fogExp2',
 		'flatShading', 'sizeAttenuation', 'logarithmicDepthBuffer', 'skinning',
 		'maxBones', 'useVertexTexture', 'morphTargets', 'morphNormals', 'premultipliedAlpha',
 		'numDirLights', 'numPointLights', 'numSpotLights', 'numHemiLights', 'numRectAreaLights',
@@ -17429,6 +17460,7 @@ function WebGLPrograms( renderer, cubemaps, extensions, capabilities, bindingSta
 
 			vertexTangents: ( material.normalMap && material.vertexTangents ),
 			vertexColors: material.vertexColors,
+			vertexAlpha: ( ( object.isMesh || object.isLine || object.isPoints ) && object.geometry.attributes.color && object.geometry.attributes.color.itemSize === 4 ),
 			vertexUvs: !! material.map || !! material.bumpMap || !! material.normalMap || !! material.specularMap || !! material.alphaMap || !! material.emissiveMap || !! material.roughnessMap || !! material.metalnessMap || !! material.clearcoatMap || !! material.clearcoatRoughnessMap || !! material.clearcoatNormalMap || !! material.displacementMap || !! material.transmissionMap,
 			uvsVertexOnly: ! ( !! material.map || !! material.bumpMap || !! material.normalMap || !! material.specularMap || !! material.alphaMap || !! material.emissiveMap || !! material.roughnessMap || !! material.metalnessMap || !! material.clearcoatNormalMap || !! material.transmissionMap ) && !! material.displacementMap,
 
@@ -21983,6 +22015,12 @@ function WebXRManager( renderer, gl ) {
 		return controller.getTargetRaySpace();
 
 	};
+	this.getCameraPose = function ( ) {
+
+		return pose;
+
+    };
+
 
 	this.getControllerGrip = function ( index ) {
 
@@ -24515,6 +24553,7 @@ function WebGLRenderer( parameters ) {
 		materialProperties.instancing = parameters.instancing;
 		materialProperties.numClippingPlanes = parameters.numClippingPlanes;
 		materialProperties.numIntersection = parameters.numClipIntersection;
+		materialProperties.vertexAlpha = parameters.vertexAlpha;
 
 	}
 
@@ -24528,6 +24567,7 @@ function WebGLRenderer( parameters ) {
 		const environment = material.isMeshStandardMaterial ? scene.environment : null;
 		const encoding = ( _currentRenderTarget === null ) ? _this.outputEncoding : _currentRenderTarget.texture.encoding;
 		const envMap = cubemaps.get( material.envMap || environment );
+		const vertexAlpha = ( ( object.isMesh || object.isLine || object.isPoints ) && object.geometry.attributes.color && object.geometry.attributes.color.itemSize === 4 );
 
 		const materialProperties = properties.get( material );
 		const lights = currentRenderState.state.lights;
@@ -24582,6 +24622,10 @@ function WebGLRenderer( parameters ) {
 			} else if ( materialProperties.numClippingPlanes !== undefined &&
 				( materialProperties.numClippingPlanes !== clipping.numPlanes ||
 				materialProperties.numIntersection !== clipping.numIntersection ) ) {
+
+				needsProgramChange = true;
+
+			} else if ( materialProperties.vertexAlpha !== vertexAlpha ) {
 
 				needsProgramChange = true;
 

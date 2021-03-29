@@ -62,6 +62,12 @@ function WebXRManager( renderer, gl ) {
 		return controller.getTargetRaySpace();
 
 	};
+	this.getCameraPose = function ( ) {
+
+		return pose;
+
+    };
+
 
 	this.getControllerGrip = function ( index ) {
 
