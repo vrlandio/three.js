@@ -1924,11 +1924,13 @@
 		constructor(width, height, options) {
 			super(width, height, options);
 			this.samples = 4;
+			this.toScreen = false;
 		}
 
 		copy(source) {
 			super.copy.call(this, source);
 			this.samples = source.samples;
+			this.toScreen = source.toScreen;
 			return this;
 		}
 
@@ -4951,25 +4953,25 @@
 
 	let _object3DId = 0;
 
-	const _v1$4 = new /*@__PURE__*/Vector3();
+	const _v1$4 = /*@__PURE__*/new Vector3();
 
-	const _q1 = new /*@__PURE__*/Quaternion();
+	const _q1 = /*@__PURE__*/new Quaternion();
 
-	const _m1$1 = new /*@__PURE__*/Matrix4();
+	const _m1$1 = /*@__PURE__*/new Matrix4();
 
-	const _target = new /*@__PURE__*/Vector3();
+	const _target = /*@__PURE__*/new Vector3();
 
-	const _position$3 = new /*@__PURE__*/Vector3();
+	const _position$3 = /*@__PURE__*/new Vector3();
 
-	const _scale$2 = new /*@__PURE__*/Vector3();
+	const _scale$2 = /*@__PURE__*/new Vector3();
 
-	const _quaternion$2 = new /*@__PURE__*/Quaternion();
+	const _quaternion$2 = /*@__PURE__*/new Quaternion();
 
-	const _xAxis = new /*@__PURE__*/Vector3(1, 0, 0);
+	const _xAxis = /*@__PURE__*/new Vector3(1, 0, 0);
 
-	const _yAxis = new /*@__PURE__*/Vector3(0, 1, 0);
+	const _yAxis = /*@__PURE__*/new Vector3(0, 1, 0);
 
-	const _zAxis = new /*@__PURE__*/Vector3(0, 0, 1);
+	const _zAxis = /*@__PURE__*/new Vector3(0, 0, 1);
 
 	const _addedEvent = {
 		type: 'added'
@@ -5035,6 +5037,9 @@
 					value: new Matrix3()
 				}
 			});
+			this._positionCache = new Vector3();
+			this._quaternionCache = new Quaternion();
+			this._scaleCache = new Vector3().copy(scale);
 			this.matrix = new Matrix4();
 			this.matrixWorld = new Matrix4();
 			this.matrixAutoUpdate = Object3D.DefaultMatrixAutoUpdate;
@@ -5348,8 +5353,16 @@
 		}
 
 		updateMatrix() {
-			this.matrix.compose(this.position, this.quaternion, this.scale);
-			this.matrixWorldNeedsUpdate = true;
+			if (!this._positionCache.equals(this.position) || !this._quaternionCache.equals(this.quaternion) || !this._scaleCache.equals(this.scale)) {
+				this.matrix.compose(this.position, this.quaternion, this.scale);
+				this.matrixWorldNeedsUpdate = true;
+
+				this._positionCache.copy(this.position);
+
+				this._quaternionCache.copy(this.quaternion);
+
+				this._scaleCache.copy(this.scale);
+			}
 		}
 
 		updateMatrixWorld(force) {
@@ -7011,9 +7024,9 @@
 
 	MeshBasicMaterial.prototype.isMeshBasicMaterial = true;
 
-	const _vector$9 = new /*@__PURE__*/Vector3();
+	const _vector$9 = /*@__PURE__*/new Vector3();
 
-	const _vector2 = new /*@__PURE__*/Vector2();
+	const _vector2 = /*@__PURE__*/new Vector2();
 
 	class BufferAttribute {
 		constructor(array, itemSize, normalized) {
@@ -7407,17 +7420,17 @@
 
 	let _id = 0;
 
-	const _m1 = new /*@__PURE__*/Matrix4();
+	const _m1 = /*@__PURE__*/new Matrix4();
 
-	const _obj = new /*@__PURE__*/Object3D();
+	const _obj = /*@__PURE__*/new Object3D();
 
-	const _offset = new /*@__PURE__*/Vector3();
+	const _offset = /*@__PURE__*/new Vector3();
 
-	const _box$1 = new /*@__PURE__*/Box3();
+	const _box$1 = /*@__PURE__*/new Box3();
 
-	const _boxMorphTargets = new /*@__PURE__*/Box3();
+	const _boxMorphTargets = /*@__PURE__*/new Box3();
 
-	const _vector$8 = new /*@__PURE__*/Vector3();
+	const _vector$8 = /*@__PURE__*/new Vector3();
 
 	class BufferGeometry extends EventDispatcher {
 		constructor() {
@@ -15810,7 +15823,8 @@
 			const isCube = renderTarget.isWebGLCubeRenderTarget === true;
 			const isMultisample = renderTarget.isWebGLMultisampleRenderTarget === true;
 			const isRenderTarget3D = texture.isDataTexture3D || texture.isDataTexture2DArray;
-			const supportsMips = isPowerOfTwo$1(renderTarget) || isWebGL2; // Handles WebGL2 RGBFormat fallback - #18858
+			const supportsMips = isPowerOfTwo$1(renderTarget) || isWebGL2;
+			const toScreen = isMultisample && renderTarget.toScreen; // Handles WebGL2 RGBFormat fallback - #18858
 
 			if (isWebGL2 && texture.format === RGBFormat && (texture.type === FloatType || texture.type === HalfFloatType)) {
 				texture.format = RGBAFormat;
@@ -15825,7 +15839,7 @@
 					renderTargetProperties.__webglFramebuffer[i] = _gl.createFramebuffer();
 				}
 			} else {
-				renderTargetProperties.__webglFramebuffer = _gl.createFramebuffer();
+				renderTargetProperties.__webglFramebuffer = toScreen ? null : _gl.createFramebuffer();
 
 				if (isMultisample) {
 					if (isWebGL2) {
@@ -15857,49 +15871,51 @@
 						console.warn('THREE.WebGLRenderer: WebGLMultisampleRenderTarget can only be used with WebGL2.');
 					}
 				}
-			} // Setup color buffer
+			}
 
+			if (toScreen === false) {
+				// Setup color buffer
+				if (isCube) {
+					state.bindTexture(_gl.TEXTURE_CUBE_MAP, textureProperties.__webglTexture);
+					setTextureParameters(_gl.TEXTURE_CUBE_MAP, texture, supportsMips);
 
-			if (isCube) {
-				state.bindTexture(_gl.TEXTURE_CUBE_MAP, textureProperties.__webglTexture);
-				setTextureParameters(_gl.TEXTURE_CUBE_MAP, texture, supportsMips);
-
-				for (let i = 0; i < 6; i++) {
-					setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer[i], renderTarget, _gl.COLOR_ATTACHMENT0, _gl.TEXTURE_CUBE_MAP_POSITIVE_X + i);
-				}
-
-				if (textureNeedsGenerateMipmaps(texture, supportsMips)) {
-					generateMipmap(_gl.TEXTURE_CUBE_MAP, texture, renderTarget.width, renderTarget.height);
-				}
-
-				state.bindTexture(_gl.TEXTURE_CUBE_MAP, null);
-			} else {
-				let glTextureType = _gl.TEXTURE_2D;
-
-				if (isRenderTarget3D) {
-					// Render targets containing layers, i.e: Texture 3D and 2d arrays
-					if (isWebGL2) {
-						const isTexture3D = texture.isDataTexture3D;
-						glTextureType = isTexture3D ? _gl.TEXTURE_3D : _gl.TEXTURE_2D_ARRAY;
-					} else {
-						console.warn('THREE.DataTexture3D and THREE.DataTexture2DArray only supported with WebGL2.');
+					for (let i = 0; i < 6; i++) {
+						setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer[i], renderTarget, _gl.COLOR_ATTACHMENT0, _gl.TEXTURE_CUBE_MAP_POSITIVE_X + i);
 					}
+
+					if (textureNeedsGenerateMipmaps(texture, supportsMips)) {
+						generateMipmap(_gl.TEXTURE_CUBE_MAP, texture, renderTarget.width, renderTarget.height);
+					}
+
+					state.bindTexture(_gl.TEXTURE_CUBE_MAP, null);
+				} else {
+					let glTextureType = _gl.TEXTURE_2D;
+
+					if (isRenderTarget3D) {
+						// Render targets containing layers, i.e: Texture 3D and 2d arrays
+						if (isWebGL2) {
+							const isTexture3D = texture.isDataTexture3D;
+							glTextureType = isTexture3D ? _gl.TEXTURE_3D : _gl.TEXTURE_2D_ARRAY;
+						} else {
+							console.warn('THREE.DataTexture3D and THREE.DataTexture2DArray only supported with WebGL2.');
+						}
+					}
+
+					state.bindTexture(glTextureType, textureProperties.__webglTexture);
+					setTextureParameters(glTextureType, texture, supportsMips);
+					setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer, renderTarget, _gl.COLOR_ATTACHMENT0, glTextureType);
+
+					if (textureNeedsGenerateMipmaps(texture, supportsMips)) {
+						generateMipmap(_gl.TEXTURE_2D, texture, renderTarget.width, renderTarget.height);
+					}
+
+					state.bindTexture(_gl.TEXTURE_2D, null);
+				} // Setup depth and stencil buffers
+
+
+				if (renderTarget.depthBuffer) {
+					setupDepthRenderbuffer(renderTarget);
 				}
-
-				state.bindTexture(glTextureType, textureProperties.__webglTexture);
-				setTextureParameters(glTextureType, texture, supportsMips);
-				setupFrameBufferTexture(renderTargetProperties.__webglFramebuffer, renderTarget, _gl.COLOR_ATTACHMENT0, glTextureType);
-
-				if (textureNeedsGenerateMipmaps(texture, supportsMips)) {
-					generateMipmap(_gl.TEXTURE_2D, texture, renderTarget.width, renderTarget.height);
-				}
-
-				state.bindTexture(_gl.TEXTURE_2D, null);
-			} // Setup depth and stencil buffers
-
-
-			if (renderTarget.depthBuffer) {
-				setupDepthRenderbuffer(renderTarget);
 			}
 		}
 
@@ -15924,8 +15940,12 @@
 					const width = renderTarget.width;
 					const height = renderTarget.height;
 					let mask = _gl.COLOR_BUFFER_BIT;
-					if (renderTarget.depthBuffer) mask |= _gl.DEPTH_BUFFER_BIT;
-					if (renderTarget.stencilBuffer) mask |= _gl.STENCIL_BUFFER_BIT;
+
+					if (renderTarget.toScreen === false) {
+						if (renderTarget.depthBuffer) mask |= _gl.DEPTH_BUFFER_BIT;
+						if (renderTarget.stencilBuffer) mask |= _gl.STENCIL_BUFFER_BIT;
+					}
+
 					const renderTargetProperties = properties.get(renderTarget);
 					state.bindFramebuffer(_gl.READ_FRAMEBUFFER, renderTargetProperties.__webglMultisampledFramebuffer);
 					state.bindFramebuffer(_gl.DRAW_FRAMEBUFFER, renderTargetProperties.__webglFramebuffer);
@@ -16400,6 +16420,10 @@
 				}
 
 				return controller.getTargetRaySpace();
+			};
+
+			this.getCameraPose = function () {
+				return pose;
 			};
 
 			this.getControllerGrip = function (index) {
@@ -18822,7 +18846,7 @@
 
 	InterleavedBuffer.prototype.isInterleavedBuffer = true;
 
-	const _vector$6 = new /*@__PURE__*/Vector3();
+	const _vector$6 = /*@__PURE__*/new Vector3();
 
 	class InterleavedBufferAttribute {
 		constructor(interleavedBuffer, itemSize, offset, normalized) {

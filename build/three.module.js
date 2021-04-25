@@ -2540,6 +2540,7 @@ class WebGLMultisampleRenderTarget extends WebGLRenderTarget {
 		super( width, height, options );
 
 		this.samples = 4;
+		this.toScreen = false;
 
 	}
 
@@ -2548,6 +2549,7 @@ class WebGLMultisampleRenderTarget extends WebGLRenderTarget {
 		super.copy.call( this, source );
 
 		this.samples = source.samples;
+		this.toScreen = source.toScreen;
 
 		return this;
 
@@ -6477,18 +6479,18 @@ class Layers {
 
 let _object3DId = 0;
 
-const _v1$4 = new /*@__PURE__*/ Vector3();
-const _q1 = new /*@__PURE__*/ Quaternion();
-const _m1$1 = new /*@__PURE__*/ Matrix4();
-const _target = new /*@__PURE__*/ Vector3();
+const _v1$4 = /*@__PURE__*/ new Vector3();
+const _q1 = /*@__PURE__*/ new Quaternion();
+const _m1$1 = /*@__PURE__*/ new Matrix4();
+const _target = /*@__PURE__*/ new Vector3();
 
-const _position$3 = new /*@__PURE__*/ Vector3();
-const _scale$2 = new /*@__PURE__*/ Vector3();
-const _quaternion$2 = new /*@__PURE__*/ Quaternion();
+const _position$3 = /*@__PURE__*/ new Vector3();
+const _scale$2 = /*@__PURE__*/ new Vector3();
+const _quaternion$2 = /*@__PURE__*/ new Quaternion();
 
-const _xAxis = new /*@__PURE__*/ Vector3( 1, 0, 0 );
-const _yAxis = new /*@__PURE__*/ Vector3( 0, 1, 0 );
-const _zAxis = new /*@__PURE__*/ Vector3( 0, 0, 1 );
+const _xAxis = /*@__PURE__*/ new Vector3( 1, 0, 0 );
+const _yAxis = /*@__PURE__*/ new Vector3( 0, 1, 0 );
+const _zAxis = /*@__PURE__*/ new Vector3( 0, 0, 1 );
 
 const _addedEvent = { type: 'added' };
 const _removedEvent = { type: 'removed' };
@@ -6559,6 +6561,9 @@ class Object3D extends EventDispatcher {
 				value: new Matrix3()
 			}
 		} );
+		this._positionCache = new Vector3();
+     	this._quaternionCache = new Quaternion();
+        this._scaleCache = new Vector3().copy(scale);
 
 		this.matrix = new Matrix4();
 		this.matrixWorld = new Matrix4();
@@ -7027,9 +7032,17 @@ class Object3D extends EventDispatcher {
 
 	updateMatrix() {
 
-		this.matrix.compose( this.position, this.quaternion, this.scale );
+		if (!this._positionCache.equals(this.position) || !this._quaternionCache.equals(this.quaternion) || !this._scaleCache.equals(this.scale)) {
+			this.matrix.compose(this.position, this.quaternion, this.scale);
+			this.matrixWorldNeedsUpdate = true;
 
-		this.matrixWorldNeedsUpdate = true;
+			this._positionCache.copy(this.position);
+
+			this._quaternionCache.copy(this.quaternion);
+
+			this._scaleCache.copy(this.scale);
+   }
+
 
 	}
 
@@ -9096,8 +9109,8 @@ class MeshBasicMaterial extends Material {
 
 MeshBasicMaterial.prototype.isMeshBasicMaterial = true;
 
-const _vector$9 = new /*@__PURE__*/ Vector3();
-const _vector2 = new /*@__PURE__*/ Vector2();
+const _vector$9 = /*@__PURE__*/ new Vector3();
+const _vector2 = /*@__PURE__*/ new Vector2();
 
 class BufferAttribute {
 
@@ -9639,12 +9652,12 @@ function getTypedArray( type, buffer ) {
 
 let _id = 0;
 
-const _m1 = new /*@__PURE__*/ Matrix4();
-const _obj = new /*@__PURE__*/ Object3D();
-const _offset = new /*@__PURE__*/ Vector3();
-const _box$1 = new /*@__PURE__*/ Box3();
-const _boxMorphTargets = new /*@__PURE__*/ Box3();
-const _vector$8 = new /*@__PURE__*/ Vector3();
+const _m1 = /*@__PURE__*/ new Matrix4();
+const _obj = /*@__PURE__*/ new Object3D();
+const _offset = /*@__PURE__*/ new Vector3();
+const _box$1 = /*@__PURE__*/ new Box3();
+const _boxMorphTargets = /*@__PURE__*/ new Box3();
+const _vector$8 = /*@__PURE__*/ new Vector3();
 
 class BufferGeometry extends EventDispatcher {
 
@@ -21338,6 +21351,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 		const isMultisample = ( renderTarget.isWebGLMultisampleRenderTarget === true );
 		const isRenderTarget3D = texture.isDataTexture3D || texture.isDataTexture2DArray;
 		const supportsMips = isPowerOfTwo$1( renderTarget ) || isWebGL2;
+		const toScreen = ( isMultisample && renderTarget.toScreen );
 
 		// Handles WebGL2 RGBFormat fallback - #18858
 
@@ -21363,7 +21377,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 		} else {
 
-			renderTargetProperties.__webglFramebuffer = _gl.createFramebuffer();
+			renderTargetProperties.__webglFramebuffer = toScreen ? null : _gl.createFramebuffer();
 
 			if ( isMultisample ) {
 
@@ -21404,67 +21418,71 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 		}
 
-		// Setup color buffer
+		if ( toScreen === false ) {
 
-		if ( isCube ) {
+			// Setup color buffer
 
-			state.bindTexture( 34067, textureProperties.__webglTexture );
-			setTextureParameters( 34067, texture, supportsMips );
+			if ( isCube ) {
 
-			for ( let i = 0; i < 6; i ++ ) {
+				state.bindTexture( 34067, textureProperties.__webglTexture );
+				setTextureParameters( 34067, texture, supportsMips );
 
-				setupFrameBufferTexture( renderTargetProperties.__webglFramebuffer[ i ], renderTarget, 36064, 34069 + i );
+				for ( let i = 0; i < 6; i ++ ) {
 
-			}
-
-			if ( textureNeedsGenerateMipmaps( texture, supportsMips ) ) {
-
-				generateMipmap( 34067, texture, renderTarget.width, renderTarget.height );
-
-			}
-
-			state.bindTexture( 34067, null );
-
-		} else {
-
-			let glTextureType = 3553;
-
-			if ( isRenderTarget3D ) {
-
-				// Render targets containing layers, i.e: Texture 3D and 2d arrays
-
-				if ( isWebGL2 ) {
-
-					const isTexture3D = texture.isDataTexture3D;
-					glTextureType = isTexture3D ? 32879 : 35866;
-
-				} else {
-
-					console.warn( 'THREE.DataTexture3D and THREE.DataTexture2DArray only supported with WebGL2.' );
+					setupFrameBufferTexture( renderTargetProperties.__webglFramebuffer[ i ], renderTarget, 36064, 34069 + i );
 
 				}
 
+				if ( textureNeedsGenerateMipmaps( texture, supportsMips ) ) {
+
+					generateMipmap( 34067, texture, renderTarget.width, renderTarget.height );
+
+				}
+
+				state.bindTexture( 34067, null );
+
+			} else {
+
+				let glTextureType = 3553;
+
+				if ( isRenderTarget3D ) {
+
+					// Render targets containing layers, i.e: Texture 3D and 2d arrays
+
+					if ( isWebGL2 ) {
+
+						const isTexture3D = texture.isDataTexture3D;
+						glTextureType = isTexture3D ? 32879 : 35866;
+
+					} else {
+
+						console.warn( 'THREE.DataTexture3D and THREE.DataTexture2DArray only supported with WebGL2.' );
+
+					}
+
+				}
+
+				state.bindTexture( glTextureType, textureProperties.__webglTexture );
+				setTextureParameters( glTextureType, texture, supportsMips );
+				setupFrameBufferTexture( renderTargetProperties.__webglFramebuffer, renderTarget, 36064, glTextureType );
+
+				if ( textureNeedsGenerateMipmaps( texture, supportsMips ) ) {
+
+					generateMipmap( 3553, texture, renderTarget.width, renderTarget.height );
+
+				}
+
+				state.bindTexture( 3553, null );
+
 			}
 
-			state.bindTexture( glTextureType, textureProperties.__webglTexture );
-			setTextureParameters( glTextureType, texture, supportsMips );
-			setupFrameBufferTexture( renderTargetProperties.__webglFramebuffer, renderTarget, 36064, glTextureType );
+			// Setup depth and stencil buffers
 
-			if ( textureNeedsGenerateMipmaps( texture, supportsMips ) ) {
+			if ( renderTarget.depthBuffer ) {
 
-				generateMipmap( 3553, texture, renderTarget.width, renderTarget.height );
+				setupDepthRenderbuffer( renderTarget );
 
 			}
-
-			state.bindTexture( 3553, null );
-
-		}
-
-		// Setup depth and stencil buffers
-
-		if ( renderTarget.depthBuffer ) {
-
-			setupDepthRenderbuffer( renderTarget );
 
 		}
 
@@ -21499,8 +21517,12 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 				const height = renderTarget.height;
 				let mask = 16384;
 
-				if ( renderTarget.depthBuffer ) mask |= 256;
-				if ( renderTarget.stencilBuffer ) mask |= 1024;
+				if ( renderTarget.toScreen === false ) {
+
+					if ( renderTarget.depthBuffer ) mask |= 256;
+					if ( renderTarget.stencilBuffer ) mask |= 1024;
+
+				}
 
 				const renderTargetProperties = properties.get( renderTarget );
 
@@ -22180,6 +22202,12 @@ class WebXRManager extends EventDispatcher {
 
 			return controller.getTargetRaySpace();
 
+		};
+
+		this.getCameraPose = function ( ) {
+
+			return pose;
+	
 		};
 
 		this.getControllerGrip = function ( index ) {
@@ -25638,7 +25666,7 @@ class InterleavedBuffer {
 
 InterleavedBuffer.prototype.isInterleavedBuffer = true;
 
-const _vector$6 = new /*@__PURE__*/ Vector3();
+const _vector$6 = /*@__PURE__*/ new Vector3();
 
 class InterleavedBufferAttribute {
 
