@@ -2612,6 +2612,7 @@ class WebGLMultisampleRenderTarget extends WebGLRenderTarget {
 		super( width, height, options );
 
 		this.samples = 4;
+		this.toScreen = false;
 
 	}
 
@@ -2620,6 +2621,7 @@ class WebGLMultisampleRenderTarget extends WebGLRenderTarget {
 		super.copy.call( this, source );
 
 		this.samples = source.samples;
+		this.toScreen = source.toScreen;
 
 		return this;
 
@@ -21348,6 +21350,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 		const isMultisample = ( renderTarget.isWebGLMultisampleRenderTarget === true );
 		const isRenderTarget3D = texture.isDataTexture3D || texture.isDataTexture2DArray;
 		const supportsMips = isPowerOfTwo$1( renderTarget ) || isWebGL2;
+		const toScreen = ( isMultisample && renderTarget.toScreen );
 
 		// Handles WebGL2 RGBFormat fallback - #18858
 
@@ -21373,7 +21376,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 		} else {
 
-			renderTargetProperties.__webglFramebuffer = _gl.createFramebuffer();
+			renderTargetProperties.__webglFramebuffer = toScreen ? null : _gl.createFramebuffer();
 
 			if ( isMultipleRenderTargets ) {
 
@@ -21442,88 +21445,92 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 		// Setup color buffer
 
-		if ( isCube ) {
+		if ( toScreen === false ) {
 
-			state.bindTexture( 34067, textureProperties.__webglTexture );
-			setTextureParameters( 34067, texture, supportsMips );
+			if ( isCube ) {
 
-			for ( let i = 0; i < 6; i ++ ) {
+				state.bindTexture( 34067, textureProperties.__webglTexture );
+				setTextureParameters( 34067, texture, supportsMips );
 
-				setupFrameBufferTexture( renderTargetProperties.__webglFramebuffer[ i ], renderTarget, texture, 36064, 34069 + i );
+				for ( let i = 0; i < 6; i ++ ) {
 
-			}
-
-			if ( textureNeedsGenerateMipmaps( texture, supportsMips ) ) {
-
-				generateMipmap( 34067, texture, renderTarget.width, renderTarget.height );
-
-			}
-
-			state.bindTexture( 34067, null );
-
-		} else if ( isMultipleRenderTargets ) {
-
-			const textures = renderTarget.texture;
-
-			for ( let i = 0, il = textures.length; i < il; i ++ ) {
-
-				const attachment = textures[ i ];
-				const attachmentProperties = properties.get( attachment );
-
-				state.bindTexture( 3553, attachmentProperties.__webglTexture );
-				setTextureParameters( 3553, attachment, supportsMips );
-				setupFrameBufferTexture( renderTargetProperties.__webglFramebuffer, renderTarget, attachment, 36064 + i, 3553 );
-
-				if ( textureNeedsGenerateMipmaps( attachment, supportsMips ) ) {
-
-					generateMipmap( 3553, attachment, renderTarget.width, renderTarget.height );
+					setupFrameBufferTexture( renderTargetProperties.__webglFramebuffer[ i ], renderTarget, texture, 36064, 34069 + i );
 
 				}
 
-			}
+				if ( textureNeedsGenerateMipmaps( texture, supportsMips ) ) {
 
-			state.bindTexture( 3553, null );
-
-		} else {
-
-			let glTextureType = 3553;
-
-			if ( isRenderTarget3D ) {
-
-				// Render targets containing layers, i.e: Texture 3D and 2d arrays
-
-				if ( isWebGL2 ) {
-
-					const isTexture3D = texture.isDataTexture3D;
-					glTextureType = isTexture3D ? 32879 : 35866;
-
-				} else {
-
-					console.warn( 'THREE.DataTexture3D and THREE.DataTexture2DArray only supported with WebGL2.' );
+					generateMipmap( 34067, texture, renderTarget.width, renderTarget.height );
 
 				}
 
+				state.bindTexture( 34067, null );
+
+			} else if ( isMultipleRenderTargets ) {
+
+				const textures = renderTarget.texture;
+
+				for ( let i = 0, il = textures.length; i < il; i ++ ) {
+
+					const attachment = textures[ i ];
+					const attachmentProperties = properties.get( attachment );
+
+					state.bindTexture( 3553, attachmentProperties.__webglTexture );
+					setTextureParameters( 3553, attachment, supportsMips );
+					setupFrameBufferTexture( renderTargetProperties.__webglFramebuffer, renderTarget, attachment, 36064 + i, 3553 );
+
+					if ( textureNeedsGenerateMipmaps( attachment, supportsMips ) ) {
+
+						generateMipmap( 3553, attachment, renderTarget.width, renderTarget.height );
+
+					}
+
+				}
+
+				state.bindTexture( 3553, null );
+
+			} else {
+
+				let glTextureType = 3553;
+
+				if ( isRenderTarget3D ) {
+
+					// Render targets containing layers, i.e: Texture 3D and 2d arrays
+
+					if ( isWebGL2 ) {
+
+						const isTexture3D = texture.isDataTexture3D;
+						glTextureType = isTexture3D ? 32879 : 35866;
+
+					} else {
+
+						console.warn( 'THREE.DataTexture3D and THREE.DataTexture2DArray only supported with WebGL2.' );
+
+					}
+
+				}
+
+				state.bindTexture( glTextureType, textureProperties.__webglTexture );
+				setTextureParameters( glTextureType, texture, supportsMips );
+				setupFrameBufferTexture( renderTargetProperties.__webglFramebuffer, renderTarget, texture, 36064, glTextureType );
+
+				if ( textureNeedsGenerateMipmaps( texture, supportsMips ) ) {
+
+					generateMipmap( 3553, texture, renderTarget.width, renderTarget.height );
+
+				}
+
+				state.bindTexture( 3553, null );
+
 			}
 
-			state.bindTexture( glTextureType, textureProperties.__webglTexture );
-			setTextureParameters( glTextureType, texture, supportsMips );
-			setupFrameBufferTexture( renderTargetProperties.__webglFramebuffer, renderTarget, texture, 36064, glTextureType );
+			// Setup depth and stencil buffers
 
-			if ( textureNeedsGenerateMipmaps( texture, supportsMips ) ) {
+			if ( renderTarget.depthBuffer ) {
 
-				generateMipmap( 3553, texture, renderTarget.width, renderTarget.height );
+				setupDepthRenderbuffer( renderTarget );
 
 			}
-
-			state.bindTexture( 3553, null );
-
-		}
-
-		// Setup depth and stencil buffers
-
-		if ( renderTarget.depthBuffer ) {
-
-			setupDepthRenderbuffer( renderTarget );
 
 		}
 
@@ -21564,8 +21571,12 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 				const height = renderTarget.height;
 				let mask = 16384;
 
-				if ( renderTarget.depthBuffer ) mask |= 256;
-				if ( renderTarget.stencilBuffer ) mask |= 1024;
+				if ( renderTarget.toScreen === false ) {
+
+					if ( renderTarget.depthBuffer ) mask |= 256;
+					if ( renderTarget.stencilBuffer ) mask |= 1024;
+
+				}
 
 				const renderTargetProperties = properties.get( renderTarget );
 
