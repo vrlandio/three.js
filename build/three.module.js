@@ -6567,6 +6567,9 @@ class Object3D extends EventDispatcher {
 			}
 		} );
 
+                this._positionCache = new Vector3();
+		this._quaternionCache = new Quaternion();
+		this._scaleCache = new Vector3().copy(scale);
 		this.matrix = new Matrix4();
 		this.matrixWorld = new Matrix4();
 
@@ -7020,10 +7023,16 @@ class Object3D extends EventDispatcher {
 
 	updateMatrix() {
 
-		this.matrix.compose( this.position, this.quaternion, this.scale );
+                 if (!this._positionCache.equals(this.position) || !this._quaternionCache.equals(this.quaternion) || !this._scaleCache.equals(this.scale)) {
+				this.matrix.compose(this.position, this.quaternion, this.scale);
+				this.matrixWorldNeedsUpdate = true;
 
-		this.matrixWorldNeedsUpdate = true;
+				this._positionCache.copy(this.position);
 
+				this._quaternionCache.copy(this.quaternion);
+
+				this._scaleCache.copy(this.scale);
+		 }
 	}
 
 	updateMatrixWorld( force ) {
@@ -22225,6 +22234,11 @@ class WebXRManager extends EventDispatcher {
 		this.enabled = false;
 
 		this.isPresenting = false;
+                this.getCameraPose = function ( ) {
+
+			return pose;
+
+		};
 
 		this.getController = function ( index ) {
 
