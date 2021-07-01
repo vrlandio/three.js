@@ -16796,7 +16796,6 @@
 								gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, glSubImage.depthStencilTexture, 0);
 							}
 
-							gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 							state.bindXRFramebuffer(glFramebuffer);
 							viewport = glSubImage.viewport;
 						}
