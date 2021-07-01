@@ -22702,7 +22702,7 @@ class WebXRManager extends EventDispatcher {
 
 						}
 
-
+                                                gl.bindFramebuffer( 36160, null );
 						state.bindXRFramebuffer( glFramebuffer );
 
 						viewport = glSubImage.viewport;
