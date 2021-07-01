@@ -22692,7 +22692,7 @@ class WebXRManager extends EventDispatcher {
 
 						const glSubImage = glBinding.getViewSubImage( glProjLayer, view );
 
-						gl.bindFramebuffer( 36160, glFramebuffer );
+						state.bindXRFramebuffer( glFramebuffer );
 
 						gl.framebufferTexture2D( 36160, 36064, 3553, glSubImage.colorTexture, 0 );
 
@@ -22702,8 +22702,6 @@ class WebXRManager extends EventDispatcher {
 
 						}
 
-                                                gl.bindFramebuffer( 36160, null );
-						state.bindXRFramebuffer( glFramebuffer );
 
 						viewport = glSubImage.viewport;
 
